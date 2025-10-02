@@ -6,8 +6,8 @@ module test;
   logic rst;
 
   cpu i_cpu (
-    .clk (clk),
-    .rst (rst)
+    .clk_i (clk),
+    .rst_i (rst)
   );
 
   initial begin
