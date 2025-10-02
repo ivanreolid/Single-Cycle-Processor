@@ -1,8 +1,8 @@
 `include "adder_pc_32b_2.sv"
 
 module cpu (
-  input logic clk,
-  input logic rst
+  input logic clk_i,
+  input logic rst_i
 );
 
   logic [31:0] pc_d, pc_q;
@@ -13,8 +13,8 @@ module cpu (
     .result_o (pc_d )
   );
 
-  always_ff @(posedge clk or negedge rst) begin : flops
-    if (!rst) begin
+  always_ff @(posedge clk_i or negedge rst_i) begin : flops
+    if (!rst_i) begin
       pc_q <= 0;
     end else begin
       pc_q <= pc_d;
