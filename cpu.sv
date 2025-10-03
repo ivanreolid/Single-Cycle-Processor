@@ -1,5 +1,5 @@
-`include "adder_pc_32b_2.sv"
 `include "imem.sv"
+`include "rbank.sv"
 
 module cpu (
   input logic clk_i,
@@ -10,12 +10,6 @@ module cpu (
   logic [31:0] instruction;
 
   logic [31:0] reg_a_data, reg_b_data;
-
-  adder_pc_32b_2 pc_adder (
-    .a_i      (pc_q ),
-    .b_i      (1    ),
-    .result_o (pc_d )
-  );
 
   imem imem (
     .address_i     (pc_q       ),
@@ -35,7 +29,7 @@ module cpu (
     .reg_b_data_o (reg_b_data)
   );
 
-  always_ff @(posedge clk_i or negedge rst_i) begin : flops
+  always_ff @(posedge clk_i) begin : flops
     if (!rst_i) begin
       pc_q <= 0;
     end else begin
@@ -43,8 +37,6 @@ module cpu (
     end
   end
 
-  initial begin
-    pc_d = 0;
-  end
-  
+  assign pc_d = (pc_q + 1) % 4096;
+
 endmodule
