@@ -1,23 +1,35 @@
 `include "imem.sv"
 `include "rbank.sv"
 
-module cpu (
+module cpu #(
+  parameter MEM_SIZE = 4096
+)(
   input logic clk_i,
   input logic rst_i
 );
 
-  logic [31:0] pc_d, pc_q;
-  logic [31:0] instruction;
+  localparam INSTR_WIDTH = 32;
+  localparam ADDR_WIDTH  = 32;
+  localparam DATA_WIDTH  = 32;
 
-  logic [31:0] reg_a_data, reg_b_data;
+  logic [ADDR_WIDTH-1:0] pc_d, pc_q;
+  logic [INSTR_WIDTH-1:0] instruction;
 
-  imem imem (
+  logic [DATA_WIDTH-1:0] reg_a_data, reg_b_data;
+
+  imem #(
+    .MEM_SIZE      (MEM_SIZE   ),
+    .ADDR_WIDTH    (ADDR_WIDTH ),
+    .DATA_WIDTH    (INSTR_WIDTH)
+  ) imem (
     .address_i     (pc_q       ),
     .instruction_o (instruction)
   );
 
   // TODO: populate correctly with the proper wires
-  rbank rbank (
+  rbank #(
+    .DATA_WIDTH (DATA_WIDTH)
+   ) rbank (
     .clk_i       (clk_i),
     .rst_i       (rst_i),
     .wr_en_i     (1'b0),
@@ -37,6 +49,6 @@ module cpu (
     end
   end
 
-  assign pc_d = (pc_q + 1) % 4096;
+  assign pc_d = (pc_q + 1) % MEM_SIZE;
 
 endmodule
