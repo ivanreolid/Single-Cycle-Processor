@@ -1,20 +1,24 @@
-module rbank (
+module rbank #(
+  parameter DATA_WIDTH = 32
+)(
   input  logic        clk_i,
   input  logic        rst_i,
   input  logic        wr_en_i,
   input  logic [4:0]  rd_reg_a_i,
   input  logic [4:0]  rd_reg_b_i,
   input  logic [4:0]  wr_reg_i,
-  input  logic [31:0] wr_data_i,
-  output logic [31:0] reg_a_data_o,
-  output logic [31:0] reg_b_data_o
+  input  logic [DATA_WIDTH-1:0] wr_data_i,
+  output logic [DATA_WIDTH-1:0] reg_a_data_o,
+  output logic [DATA_WIDTH-1:0] reg_b_data_o
 );
 
-  logic [31:0] regs[31:0];
+  localparam BANK_SIZE = 32;
 
-  always_ff @(posedge clk_i or negedge rst_i) begin : flops
+  logic [DATA_WIDTH-1:0] regs [0:BANK_SIZE-1];
+
+  always_ff @(posedge clk_i) begin : flops
     if (!rst_i) begin
-      for (int i = 0; i < 32; ++i) begin
+      for (int i = 0; i < BANK_SIZE; ++i) begin
         regs[i] <= i;
       end
     end else if (wr_en_i) begin
