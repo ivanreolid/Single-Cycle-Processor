@@ -7,7 +7,7 @@ module imem #(
   output logic [DATA_WIDTH-1:0] instruction_o
 );
 
-  logic [ADDR_WIDTH-1:0] mem [0:MEM_SIZE-1];
+  logic [DATA_WIDTH-1:0] mem [0:MEM_SIZE-1];
 
   assign instruction_o = mem[address_i];
 

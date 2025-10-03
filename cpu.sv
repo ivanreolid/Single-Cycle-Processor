@@ -1,5 +1,6 @@
 `include "imem.sv"
 `include "rbank.sv"
+`include "dmem.sv"
 
 module cpu #(
   parameter MEM_SIZE = 4096
@@ -39,6 +40,20 @@ module cpu #(
     .wr_data_i   (0),
     .reg_a_data_o (reg_a_data),
     .reg_b_data_o (reg_b_data)
+  );
+
+  // TODO: populate correctly with the proper wires
+  dmem #(
+    .MEM_SIZE   (MEM_SIZE  ),
+    .ADDR_WIDTH (ADDR_WIDTH),
+    .DATA_WIDTH (DATA_WIDTH)
+  ) dmem (
+    .clk_i     (clk_i),
+    .rst_i     (rst_i),
+    .wr_en_i   (0),
+    .addr_i    (0),
+    .wr_data_i (0),
+    .rd_data_o ()
   );
 
   always_ff @(posedge clk_i) begin : flops
