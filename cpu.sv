@@ -19,6 +19,11 @@ module cpu #(
   logic [INSTR_WIDTH-1:0] instruction;
 
   logic [DATA_WIDTH-1:0] reg_a_data, reg_b_data;
+  logic [DATA_WIDTH-1:0] result_alu;
+  logic [DATA_WIDTH-1:0] data_from_mem;
+  logic [DATA_WIDTH-1:0] data_to_reg;
+  
+  logic reg_wr_en;
 
   imem #(
     .MEM_SIZE      (MEM_SIZE   ),
@@ -29,17 +34,23 @@ module cpu #(
     .instruction_o (instruction)
   );
 
+  // For the current ISA, only stores do not write into the register bank
+  assign reg_wr_en = instruction[3:0] != 4'b0010;
+ 
+  // Only loads write data from memory into the register bank
+  assign data_to_reg = instruction[3:0] == 4'b0001 ? data_from_mem : result_alu;
+
   // TODO: populate correctly with the proper wires
   rbank #(
     .DATA_WIDTH (DATA_WIDTH)
    ) rbank (
-    .clk_i       (clk_i),
-    .rst_i       (rst_i),
-    .wr_en_i     (1'b0),
-    .rd_reg_a_i  (2),
-    .rd_reg_b_i  (3),
-    .wr_reg_i    (0),
-    .wr_data_i   (0),
+    .clk_i        (clk_i),
+    .rst_i        (rst_i),
+    .wr_en_i      (reg_wr_en),
+    .rd_reg_a_i   (instruction[18:14]),
+    .rd_reg_b_i   (instruction[13:9]),
+    .wr_reg_i     (instruction[8:4]),
+    .wr_data_i    (data_to_reg),
     .reg_a_data_o (reg_a_data),
     .reg_b_data_o (reg_b_data)
   );
@@ -53,9 +64,9 @@ module cpu #(
     .clk_i     (clk_i),
     .rst_i     (rst_i),
     .wr_en_i   (0),
-    .addr_i    (0),
+    .addr_i    (result_alu),
     .wr_data_i (0),
-    .rd_data_o ()
+    .rd_data_o (data_from_mem)
   );
 
   // TODO: populate correctly with the proper wires
@@ -63,10 +74,10 @@ module cpu #(
     .OPCODE_WIDTH (OPCODE_WIDTH),
     .DATA_WIDTH   (DATA_WIDTH  )
   ) alu (
-    .op_i     (0),
-    .a_i      (0),
-    .b_i      (1),
-    .result_o ()
+    .op_i     (instruction[3:0]),
+    .a_i      (reg_a_data),
+    .b_i      (reg_b_data),
+    .result_o (result_alu)
   );
 
   always_ff @(posedge clk_i) begin : flops
