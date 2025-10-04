@@ -1,6 +1,7 @@
 `include "imem.sv"
 `include "rbank.sv"
 `include "dmem.sv"
+`include "alu.sv"
 
 module cpu #(
   parameter MEM_SIZE = 4096
@@ -12,6 +13,7 @@ module cpu #(
   localparam INSTR_WIDTH = 32;
   localparam ADDR_WIDTH  = 32;
   localparam DATA_WIDTH  = 32;
+  localparam OPCODE_WIDTH = 4;
 
   logic [ADDR_WIDTH-1:0] pc_d, pc_q;
   logic [INSTR_WIDTH-1:0] instruction;
@@ -54,6 +56,17 @@ module cpu #(
     .addr_i    (0),
     .wr_data_i (0),
     .rd_data_o ()
+  );
+
+  // TODO: populate correctly with the proper wires
+  alu #(
+    .OPCODE_WIDTH (OPCODE_WIDTH),
+    .DATA_WIDTH   (DATA_WIDTH  )
+  ) alu (
+    .op_i     (0),
+    .a_i      (0),
+    .b_i      (1),
+    .result_o ()
   );
 
   always_ff @(posedge clk_i) begin : flops
