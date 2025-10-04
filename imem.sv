@@ -16,6 +16,8 @@ module imem #(
     for (int i = 0; i < MEM_SIZE; ++i) begin
       mem[i] = i * 100;
     end
+    mem[1] = 32'h4470;  // ADD r1, r2 -> r7
+    mem[2] = 32'h40B23; // SUB r6, r5 -> r18
   end
 
 endmodule
