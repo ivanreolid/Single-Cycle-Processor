@@ -28,8 +28,11 @@ module cpu #(
 
   logic [DATA_WIDTH-1:0] data_from_mem;
   logic [DATA_WIDTH-1:0] data_to_reg;
+
+  logic [4:0] reg_a;
   
   logic reg_wr_en;
+  logic dmem_wr_en;
 
   imem #(
     .MEM_SIZE      (MEM_SIZE   ),
@@ -40,26 +43,30 @@ module cpu #(
     .instruction_o (instruction)
   );
 
+  // Data a from register bank must be rd data for stores
+  assign reg_a = instruction[3:0] == 4'b0010 ? instruction[8:4] : instruction[18:14];
+
+  // For the current ISA, only stores write into data memory
+  assign dmem_wr_en = instruction[3:0] == 4'b0010;
+
   // For the current ISA, only stores do not write into the register bank
   assign reg_wr_en = instruction[3:0] != 4'b0010;
 
   assign offset_sign_extend = {{DATA_WIDTH-(INSTR_WIDTH-14){instruction[INSTR_WIDTH-1]}}, instruction[INSTR_WIDTH-1:14]}; 
  
-  // TODO: This needs to be extended for the rest of the instructions with the
-  // offset field
-  assign data_a_to_alu = instruction[3:0] == 4'b0001 ? offset_sign_extend : reg_a_data; 
+  // Data a for the ALU is the offset sign extended for both load and store instructions
+  assign data_a_to_alu = (instruction[3:0] == 4'b0001 || instruction[3:0] == 4'b0010) ? offset_sign_extend : reg_a_data; 
 
   // Only loads write data from memory into the register bank
   assign data_to_reg = instruction[3:0] == 4'b0001 ? data_from_mem : result_alu;
 
-  // TODO: populate correctly with the proper wires
   rbank #(
     .DATA_WIDTH (DATA_WIDTH)
    ) rbank (
     .clk_i        (clk_i),
     .rst_i        (rst_i),
     .wr_en_i      (reg_wr_en),
-    .rd_reg_a_i   (instruction[18:14]),
+    .rd_reg_a_i   (reg_a),
     .rd_reg_b_i   (instruction[13:9]),
     .wr_reg_i     (instruction[8:4]),
     .wr_data_i    (data_to_reg),
@@ -67,7 +74,6 @@ module cpu #(
     .reg_b_data_o (reg_b_data)
   );
 
-  // TODO: populate correctly with the proper wires
   dmem #(
     .MEM_SIZE   (MEM_SIZE  ),
     .ADDR_WIDTH (ADDR_WIDTH),
@@ -75,13 +81,12 @@ module cpu #(
   ) dmem (
     .clk_i     (clk_i),
     .rst_i     (rst_i),
-    .wr_en_i   (0),
+    .wr_en_i   (dmem_wr_en),
     .addr_i    (result_alu),
-    .wr_data_i (0),
+    .wr_data_i (reg_a_data),
     .rd_data_o (data_from_mem)
   );
 
-  // TODO: populate correctly with the proper wires
   alu #(
     .OPCODE_WIDTH (OPCODE_WIDTH),
     .DATA_WIDTH   (DATA_WIDTH  )
