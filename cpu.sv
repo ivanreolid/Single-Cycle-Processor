@@ -16,10 +16,16 @@ module cpu #(
   localparam OPCODE_WIDTH = 4;
 
   logic [ADDR_WIDTH-1:0] pc_d, pc_q;
-  logic [INSTR_WIDTH-1:0] instruction;
 
+  // Instruction wires
+  logic [INSTR_WIDTH-1:0] instruction;
+  logic [DATA_WIDTH-1:0] offset_sign_extend;
+
+  // ALU wires
   logic [DATA_WIDTH-1:0] reg_a_data, reg_b_data;
+  logic [DATA_WIDTH-1:0] data_a_to_alu;
   logic [DATA_WIDTH-1:0] result_alu;
+
   logic [DATA_WIDTH-1:0] data_from_mem;
   logic [DATA_WIDTH-1:0] data_to_reg;
   
@@ -36,7 +42,13 @@ module cpu #(
 
   // For the current ISA, only stores do not write into the register bank
   assign reg_wr_en = instruction[3:0] != 4'b0010;
+
+  assign offset_sign_extend = {{DATA_WIDTH-(INSTR_WIDTH-14){instruction[INSTR_WIDTH-1]}}, instruction[INSTR_WIDTH-1:14]}; 
  
+  // TODO: This needs to be extended for the rest of the instructions with the
+  // offset field
+  assign data_a_to_alu = instruction[3:0] == 4'b0001 ? offset_sign_extend : reg_a_data; 
+
   // Only loads write data from memory into the register bank
   assign data_to_reg = instruction[3:0] == 4'b0001 ? data_from_mem : result_alu;
 
@@ -75,7 +87,7 @@ module cpu #(
     .DATA_WIDTH   (DATA_WIDTH  )
   ) alu (
     .op_i     (instruction[3:0]),
-    .a_i      (reg_a_data),
+    .a_i      (data_a_to_alu),
     .b_i      (reg_b_data),
     .result_o (result_alu)
   );

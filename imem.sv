@@ -18,6 +18,8 @@ module imem #(
     end
     mem[1] = 32'h4470;  // ADD r1, r2 -> r7
     mem[2] = 32'h40B23; // SUB r6, r5 -> r18
+    mem[3] = 32'h446F1; // LW @17(r3) -> r15
+    mem[4] = 32'hFFFE1981; // LW @-17(r12) -> r24
   end
 
 endmodule
