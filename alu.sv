@@ -5,6 +5,7 @@ module alu #(
   input  logic [OPCODE_WIDTH-1:0] op_i,
   input  logic [DATA_WIDTH-1:0] a_i,
   input  logic [DATA_WIDTH-1:0] b_i,
+  output logic is_zero_o,
   output logic [DATA_WIDTH-1:0] result_o
 );
 
@@ -20,5 +21,7 @@ module alu #(
       default: result_o = 0;
     endcase
   end
+
+  assign is_zero_o = a_i == b_i;
   
 endmodule

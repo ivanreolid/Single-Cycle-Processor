@@ -22,6 +22,9 @@ module imem #(
     mem[4] = 32'hFFFE1981; // LW @-17(r12) -> r24
     mem[5] = 32'h36212; // SW r1 -> @13(r17)
     mem[6] = 32'hFFFF50E2; // SW r14 -> @-3(r8)
+    mem[7] = 32'hA0DF9; // BEQ r16, r6, 63
+    mem[8] = 32'h98DF9; // BEQ r6, r6, 63
+    mem[71] = 32'hFFE98DA9; // BEQ r6, r6, -70
   end
 
 endmodule

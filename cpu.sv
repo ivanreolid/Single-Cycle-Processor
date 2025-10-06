@@ -15,7 +15,12 @@ module cpu #(
   localparam DATA_WIDTH  = 32;
   localparam OPCODE_WIDTH = 4;
 
+  // PC wires
   logic [ADDR_WIDTH-1:0] pc_d, pc_q;
+  logic [ADDR_WIDTH-1:0] pc_plus_one, pc_plus_offset;
+  logic is_branch;
+  logic is_zero;
+  logic branch_taken;
 
   // Instruction wires
   logic [INSTR_WIDTH-1:0] instruction;
@@ -42,6 +47,11 @@ module cpu #(
     .address_i     (pc_q       ),
     .instruction_o (instruction)
   );
+
+  assign pc_plus_one = (pc_q + 1) % MEM_SIZE;
+  assign pc_plus_offset = (pc_q + {instruction[31:19], instruction[8:4]}) % MEM_SIZE;
+  assign branch_taken = (instruction[3:0] == 4'b1001) & is_zero;
+  assign pc_d = branch_taken ? pc_plus_offset : pc_plus_one;
 
   // Data a from register bank must be rd data for stores
   assign reg_a = instruction[3:0] == 4'b0010 ? instruction[8:4] : instruction[18:14];
@@ -91,10 +101,11 @@ module cpu #(
     .OPCODE_WIDTH (OPCODE_WIDTH),
     .DATA_WIDTH   (DATA_WIDTH  )
   ) alu (
-    .op_i     (instruction[3:0]),
-    .a_i      (data_a_to_alu),
-    .b_i      (reg_b_data),
-    .result_o (result_alu)
+    .op_i      (instruction[3:0]),
+    .a_i       (data_a_to_alu),
+    .b_i       (reg_b_data),
+    .is_zero_o (is_zero),
+    .result_o  (result_alu)
   );
 
   always_ff @(posedge clk_i) begin : flops
@@ -104,7 +115,5 @@ module cpu #(
       pc_q <= pc_d;
     end
   end
-
-  assign pc_d = (pc_q + 1) % MEM_SIZE;
 
 endmodule
