@@ -31,6 +31,7 @@ module imem #(
     mem[73] = 32'h21CAB;    // BLT r8, r14, 10
     mem[83] = 32'h6BEAC;    // BGE r26, r31, 10
     mem[84] = 32'h7F4AC;    // BGE r31, r26, 10
+    mem[94] = 32'h7800D;    // JMP r30
   end
 
 endmodule

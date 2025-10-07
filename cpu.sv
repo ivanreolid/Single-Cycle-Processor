@@ -17,10 +17,9 @@ module cpu #(
 
   // PC wires
   logic [ADDR_WIDTH-1:0] pc_d, pc_q;
-  logic [ADDR_WIDTH-1:0] pc_plus_one, pc_plus_offset;
-  logic is_branch;
-  logic is_zero;
-  logic is_less;
+  logic [ADDR_WIDTH-1:0] pc_plus_one, pc_plus_offset, pc_added;
+  logic is_branch, is_jump;
+  logic is_zero, is_less;
   logic branch_taken;
 
   // Instruction wires
@@ -53,9 +52,11 @@ module cpu #(
   assign pc_plus_offset = (pc_q + {instruction[31:19], instruction[8:4]}) % MEM_SIZE;
   assign is_branch = (instruction[3:0] == 4'b1001) | (instruction[3:0] == 4'b1010) | (instruction[3:0] == 4'b1011) |
                      (instruction[3:0] == 4'b1100);
+  assign is_jump = instruction[3:0] == 4'b1101;
   assign branch_taken = ((instruction[3:0] == 4'b1001) & is_zero) | ((instruction[3:0] == 4'b1010) & ~is_zero) |
                         ((instruction[3:0] == 4'b1011) & is_less) | ((instruction[3:0] == 4'b1100) & ~is_less);
-  assign pc_d = branch_taken ? pc_plus_offset : pc_plus_one;
+  assign pc_added = branch_taken ? pc_plus_offset : pc_plus_one;
+  assign pc_d = is_jump ? reg_a_data : pc_added;
 
   // Data a from register bank must be rd data for stores
   assign reg_a = instruction[3:0] == 4'b0010 ? instruction[8:4] : instruction[18:14];
@@ -63,7 +64,7 @@ module cpu #(
   // For the current ISA, only stores write into data memory
   assign dmem_wr_en = instruction[3:0] == 4'b0010;
 
-  assign reg_wr_en = (instruction[3:0] != 4'b0010) & ~is_branch;
+  assign reg_wr_en = (instruction[3:0] != 4'b0010) & ~is_branch & ~is_jump;
 
   assign offset_sign_extend = {{DATA_WIDTH-(INSTR_WIDTH-14){instruction[INSTR_WIDTH-1]}}, instruction[INSTR_WIDTH-1:14]}; 
  
