@@ -50,7 +50,7 @@ module cpu #(
 
   assign pc_plus_one = (pc_q + 1) % MEM_SIZE;
   assign pc_plus_offset = (pc_q + {instruction[31:19], instruction[8:4]}) % MEM_SIZE;
-  assign branch_taken = (instruction[3:0] == 4'b1001) & is_zero;
+  assign branch_taken = ((instruction[3:0] == 4'b1001) & is_zero) | ((instruction[3:0] == 4'b1010) & ~is_zero);
   assign pc_d = branch_taken ? pc_plus_offset : pc_plus_one;
 
   // Data a from register bank must be rd data for stores

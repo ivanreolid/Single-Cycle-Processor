@@ -16,15 +16,17 @@ module imem #(
     for (int i = 0; i < MEM_SIZE; ++i) begin
       mem[i] = i * 100;
     end
-    mem[1] = 32'h4470;  // ADD r1, r2 -> r7
-    mem[2] = 32'h40B23; // SUB r6, r5 -> r18
-    mem[3] = 32'h446F1; // LW @17(r3) -> r15
-    mem[4] = 32'hFFFE1981; // LW @-17(r12) -> r24
-    mem[5] = 32'h36212; // SW r1 -> @13(r17)
-    mem[6] = 32'hFFFF50E2; // SW r14 -> @-3(r8)
-    mem[7] = 32'hA0DF9; // BEQ r16, r6, 63
-    mem[8] = 32'h98DF9; // BEQ r6, r6, 63
-    mem[71] = 32'hFFE98DA9; // BEQ r6, r6, -70
+    mem[1] = 32'h4470;      // ADD r1, r2 -> r7
+    mem[2] = 32'h40B23;     // SUB r6, r5 -> r18
+    mem[3] = 32'h446F1;     // LW @17(r3) -> r15
+    mem[4] = 32'hFFFE1981;  // LW @-17(r12) -> r24
+    mem[5] = 32'h36212;     // SW r1 -> @13(r17)
+    mem[6] = 32'hFFFF50E2;  // SW r14 -> @-3(r8)
+    mem[7] = 32'hA0DF9;     // BEQ r16, r6, 63
+    mem[8] = 32'h98DF9;     // BEQ r6, r6, 63
+    mem[61] = 32'h427A;     // BNE r1, r1, 3
+    mem[62] = 32'h4CAA;     // BNE r1, r6, 10
+    mem[71] = 32'hFFF98D69; // BEQ r6, r6, -10
   end
 
 endmodule
