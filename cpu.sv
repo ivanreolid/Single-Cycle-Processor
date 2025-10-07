@@ -15,7 +15,12 @@ module cpu #(
   localparam DATA_WIDTH  = 32;
   localparam OPCODE_WIDTH = 4;
 
+  // PC wires
   logic [ADDR_WIDTH-1:0] pc_d, pc_q;
+  logic [ADDR_WIDTH-1:0] pc_plus_one, pc_plus_offset, pc_added;
+  logic is_branch, is_jump;
+  logic is_zero, is_less;
+  logic branch_taken;
 
   // Instruction wires
   logic [INSTR_WIDTH-1:0] instruction;
@@ -43,14 +48,23 @@ module cpu #(
     .instruction_o (instruction)
   );
 
+  assign pc_plus_one = (pc_q + 1) % MEM_SIZE;
+  assign pc_plus_offset = (pc_q + {instruction[31:19], instruction[8:4]}) % MEM_SIZE;
+  assign is_branch = (instruction[3:0] == 4'b1001) | (instruction[3:0] == 4'b1010) | (instruction[3:0] == 4'b1011) |
+                     (instruction[3:0] == 4'b1100);
+  assign is_jump = instruction[3:0] == 4'b1101;
+  assign branch_taken = ((instruction[3:0] == 4'b1001) & is_zero) | ((instruction[3:0] == 4'b1010) & ~is_zero) |
+                        ((instruction[3:0] == 4'b1011) & is_less) | ((instruction[3:0] == 4'b1100) & ~is_less);
+  assign pc_added = branch_taken ? pc_plus_offset : pc_plus_one;
+  assign pc_d = is_jump ? reg_a_data : pc_added;
+
   // Data a from register bank must be rd data for stores
   assign reg_a = instruction[3:0] == 4'b0010 ? instruction[8:4] : instruction[18:14];
 
   // For the current ISA, only stores write into data memory
   assign dmem_wr_en = instruction[3:0] == 4'b0010;
 
-  // For the current ISA, only stores do not write into the register bank
-  assign reg_wr_en = instruction[3:0] != 4'b0010;
+  assign reg_wr_en = (instruction[3:0] != 4'b0010) & ~is_branch & ~is_jump;
 
   assign offset_sign_extend = {{DATA_WIDTH-(INSTR_WIDTH-14){instruction[INSTR_WIDTH-1]}}, instruction[INSTR_WIDTH-1:14]}; 
  
@@ -91,10 +105,12 @@ module cpu #(
     .OPCODE_WIDTH (OPCODE_WIDTH),
     .DATA_WIDTH   (DATA_WIDTH  )
   ) alu (
-    .op_i     (instruction[3:0]),
-    .a_i      (data_a_to_alu),
-    .b_i      (reg_b_data),
-    .result_o (result_alu)
+    .op_i      (instruction[3:0]),
+    .a_i       (data_a_to_alu),
+    .b_i       (reg_b_data),
+    .is_zero_o (is_zero),
+    .is_less_o (is_less),
+    .result_o  (result_alu)
   );
 
   always_ff @(posedge clk_i) begin : flops
@@ -104,7 +120,5 @@ module cpu #(
       pc_q <= pc_d;
     end
   end
-
-  assign pc_d = (pc_q + 1) % MEM_SIZE;
 
 endmodule
