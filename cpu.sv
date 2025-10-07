@@ -3,6 +3,8 @@
 `include "dmem.sv"
 `include "alu.sv"
 
+import params_pkg::*;
+
 module cpu #(
   parameter MEM_SIZE = 4096
 )(
@@ -18,13 +20,14 @@ module cpu #(
   // PC wires
   logic [ADDR_WIDTH-1:0] pc_d, pc_q;
   logic [ADDR_WIDTH-1:0] pc_plus_one, pc_plus_offset, pc_added;
-  logic is_branch, is_jump;
   logic is_zero, is_less;
   logic branch_taken;
 
   // Instruction wires
   logic [INSTR_WIDTH-1:0] instruction;
   logic [DATA_WIDTH-1:0] offset_sign_extend;
+  logic is_branch, is_jump;
+  logic is_load, is_store;
 
   // ALU wires
   logic [DATA_WIDTH-1:0] reg_a_data, reg_b_data;
@@ -37,7 +40,6 @@ module cpu #(
   logic [4:0] reg_a;
   
   logic reg_wr_en;
-  logic dmem_wr_en;
 
   imem #(
     .MEM_SIZE      (MEM_SIZE   ),
@@ -48,31 +50,32 @@ module cpu #(
     .instruction_o (instruction)
   );
 
+  assign is_branch = (instruction[3:0] == BEQ) | (instruction[3:0] == BNE) | (instruction[3:0] == BLT) |
+                     (instruction[3:0] == BGE);
+  assign is_jump = instruction[3:0] == JMP;
+  assign is_load = instruction[3:0] == LW;
+  assign is_store = instruction[3:0] == SW;
+
+  assign branch_taken = ((instruction[3:0] == BEQ) & is_zero) | ((instruction[3:0] == BNE) & ~is_zero) |
+                        ((instruction[3:0] == BLT) & is_less) | ((instruction[3:0] == BGE) & ~is_less);
+ 
   assign pc_plus_one = (pc_q + 1) % MEM_SIZE;
   assign pc_plus_offset = (pc_q + {instruction[31:19], instruction[8:4]}) % MEM_SIZE;
-  assign is_branch = (instruction[3:0] == 4'b1001) | (instruction[3:0] == 4'b1010) | (instruction[3:0] == 4'b1011) |
-                     (instruction[3:0] == 4'b1100);
-  assign is_jump = instruction[3:0] == 4'b1101;
-  assign branch_taken = ((instruction[3:0] == 4'b1001) & is_zero) | ((instruction[3:0] == 4'b1010) & ~is_zero) |
-                        ((instruction[3:0] == 4'b1011) & is_less) | ((instruction[3:0] == 4'b1100) & ~is_less);
   assign pc_added = branch_taken ? pc_plus_offset : pc_plus_one;
   assign pc_d = is_jump ? reg_a_data : pc_added;
 
   // Data a from register bank must be rd data for stores
-  assign reg_a = instruction[3:0] == 4'b0010 ? instruction[8:4] : instruction[18:14];
+  assign reg_a = is_store ? instruction[8:4] : instruction[18:14];
 
-  // For the current ISA, only stores write into data memory
-  assign dmem_wr_en = instruction[3:0] == 4'b0010;
-
-  assign reg_wr_en = (instruction[3:0] != 4'b0010) & ~is_branch & ~is_jump;
+  assign reg_wr_en = ~is_store & ~is_branch & ~is_jump;
 
   assign offset_sign_extend = {{DATA_WIDTH-(INSTR_WIDTH-14){instruction[INSTR_WIDTH-1]}}, instruction[INSTR_WIDTH-1:14]}; 
  
   // Data a for the ALU is the offset sign extended for both load and store instructions
-  assign data_a_to_alu = (instruction[3:0] == 4'b0001 || instruction[3:0] == 4'b0010) ? offset_sign_extend : reg_a_data; 
+  assign data_a_to_alu = (is_load | is_store) ? offset_sign_extend : reg_a_data;
 
   // Only loads write data from memory into the register bank
-  assign data_to_reg = instruction[3:0] == 4'b0001 ? data_from_mem : result_alu;
+  assign data_to_reg = is_load ? data_from_mem : result_alu;
 
   rbank #(
     .DATA_WIDTH (DATA_WIDTH)
@@ -95,7 +98,7 @@ module cpu #(
   ) dmem (
     .clk_i     (clk_i),
     .rst_i     (rst_i),
-    .wr_en_i   (dmem_wr_en),
+    .wr_en_i   (is_store),
     .addr_i    (result_alu),
     .wr_data_i (reg_a_data),
     .rd_data_o (data_from_mem)
