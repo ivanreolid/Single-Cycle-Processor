@@ -50,6 +50,7 @@ module cpu #(
 
   assign pc_plus_one = (pc_q + 1) % MEM_SIZE;
   assign pc_plus_offset = (pc_q + {instruction[31:19], instruction[8:4]}) % MEM_SIZE;
+  assign is_branch = (instruction[3:0] == 4'b1001) | (instruction[3:0] == 4'b1010);
   assign branch_taken = ((instruction[3:0] == 4'b1001) & is_zero) | ((instruction[3:0] == 4'b1010) & ~is_zero);
   assign pc_d = branch_taken ? pc_plus_offset : pc_plus_one;
 
@@ -59,8 +60,7 @@ module cpu #(
   // For the current ISA, only stores write into data memory
   assign dmem_wr_en = instruction[3:0] == 4'b0010;
 
-  // For the current ISA, only stores do not write into the register bank
-  assign reg_wr_en = instruction[3:0] != 4'b0010;
+  assign reg_wr_en = (instruction[3:0] != 4'b0010) & ~is_branch;
 
   assign offset_sign_extend = {{DATA_WIDTH-(INSTR_WIDTH-14){instruction[INSTR_WIDTH-1]}}, instruction[INSTR_WIDTH-1:14]}; 
  
