@@ -27,6 +27,8 @@ module imem #(
     mem[61] = 32'h427A;     // BNE r1, r1, 3
     mem[62] = 32'h4CAA;     // BNE r1, r6, 10
     mem[71] = 32'hFFF98D69; // BEQ r6, r6, -10
+    mem[72] = 32'h390AB;    // BLT r14, r8, 10
+    mem[73] = 32'h21CAB;    // BLT r8, r14, 10
   end
 
 endmodule

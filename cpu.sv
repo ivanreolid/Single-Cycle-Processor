@@ -20,6 +20,7 @@ module cpu #(
   logic [ADDR_WIDTH-1:0] pc_plus_one, pc_plus_offset;
   logic is_branch;
   logic is_zero;
+  logic is_less;
   logic branch_taken;
 
   // Instruction wires
@@ -50,8 +51,9 @@ module cpu #(
 
   assign pc_plus_one = (pc_q + 1) % MEM_SIZE;
   assign pc_plus_offset = (pc_q + {instruction[31:19], instruction[8:4]}) % MEM_SIZE;
-  assign is_branch = (instruction[3:0] == 4'b1001) | (instruction[3:0] == 4'b1010);
-  assign branch_taken = ((instruction[3:0] == 4'b1001) & is_zero) | ((instruction[3:0] == 4'b1010) & ~is_zero);
+  assign is_branch = (instruction[3:0] == 4'b1001) | (instruction[3:0] == 4'b1010) | (instruction[3:0] == 4'b1011);
+  assign branch_taken = ((instruction[3:0] == 4'b1001) & is_zero) | ((instruction[3:0] == 4'b1010) & ~is_zero) |
+                        ((instruction[3:0] == 4'b1011) & is_less);
   assign pc_d = branch_taken ? pc_plus_offset : pc_plus_one;
 
   // Data a from register bank must be rd data for stores
@@ -105,6 +107,7 @@ module cpu #(
     .a_i       (data_a_to_alu),
     .b_i       (reg_b_data),
     .is_zero_o (is_zero),
+    .is_less_o (is_less),
     .result_o  (result_alu)
   );
 
