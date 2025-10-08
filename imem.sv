@@ -1,7 +1,9 @@
+import params_pkg::*;
+
 module imem #(
-  parameter MEM_SIZE = 4096,
-  parameter ADDR_WIDTH = 32,
-  parameter DATA_WIDTH = 32
+  parameter int MEM_SIZE   = params_pkg::MEM_SIZE,
+  parameter int ADDR_WIDTH = params_pkg::ADDR_WIDTH,
+  parameter int DATA_WIDTH = params_pkg::DATA_WIDTH
 )(
   input  logic [ADDR_WIDTH-1:0] address_i,
   output logic [DATA_WIDTH-1:0] instruction_o

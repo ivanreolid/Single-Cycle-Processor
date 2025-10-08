@@ -6,9 +6,7 @@ module test;
   logic clk;
   logic rst;
 
-  cpu #(
-    .MEM_SIZE (MEM_SIZE)
-  ) i_cpu (
+  cpu i_cpu (
     .clk_i (clk),
     .rst_i (rst)
   );
