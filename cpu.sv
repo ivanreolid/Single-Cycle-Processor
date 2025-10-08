@@ -2,6 +2,7 @@
 `include "rbank.sv"
 `include "dmem.sv"
 `include "alu.sv"
+`include "control.sv"
 
 import params_pkg::*;
 
@@ -19,8 +20,7 @@ module cpu (
   // Instruction wires
   instruction_t instruction;
   logic [DATA_WIDTH-1:0] offset_sign_extend;
-  logic is_branch, is_jump;
-  logic is_load, is_store;
+  logic is_load, is_store, is_jump;
 
   // ALU wires
   logic [DATA_WIDTH-1:0] reg_a_data, reg_b_data;
@@ -34,14 +34,6 @@ module cpu (
   
   logic reg_wr_en;
 
-  assign is_branch = (instruction.opcode == BEQ) | (instruction.opcode == BNE) | (instruction.opcode == BLT) | (instruction.opcode == BGE);
-  assign is_jump = instruction.opcode == JMP;
-  assign is_load = instruction.opcode == LW;
-  assign is_store = instruction.opcode == SW;
-
-  assign branch_taken = ((instruction.opcode == BEQ) & is_zero) | ((instruction.opcode == BNE) & ~is_zero) |
-                        ((instruction.opcode == BLT) & is_less) | ((instruction.opcode == BGE) & ~is_less);
- 
   assign pc_plus_one = (pc_q + 1) % MEM_SIZE;
   assign pc_plus_offset = (pc_q + {instruction.free, instruction.rd}) % MEM_SIZE;
   assign pc_added = branch_taken ? pc_plus_offset : pc_plus_one;
@@ -49,8 +41,6 @@ module cpu (
 
   // Data a from register bank must be rd data for stores
   assign reg_a = is_store ? instruction.rd : instruction.ra;
-
-  assign reg_wr_en = ~is_store & ~is_branch & ~is_jump;
 
   assign offset_sign_extend = {{DATA_WIDTH-(INSTR_WIDTH-14){instruction[INSTR_WIDTH-1]}}, instruction[INSTR_WIDTH-1:14]}; 
  
@@ -67,6 +57,19 @@ module cpu (
   ) imem (
     .address_i     (pc_q       ),
     .instruction_o (instruction)
+  );
+
+  control #(
+    .OPCODE_WIDTH (OPCODE_WIDTH)
+  ) control (
+    .opcode_i       (instruction.opcode),
+    .is_zero_i      (is_zero),
+    .is_less_i      (is_less),
+    .is_load_o      (is_load),
+    .is_store_o     (is_store),
+    .is_jump_o      (is_jump),
+    .branch_taken_o (branch_taken),
+    .reg_wr_en_o    (reg_wr_en)
   );
 
   rbank #(
