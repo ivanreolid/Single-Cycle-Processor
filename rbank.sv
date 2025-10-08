@@ -1,12 +1,15 @@
+import params_pkg::*;
+
 module rbank #(
-  parameter DATA_WIDTH = 32
+  parameter int REGISTER_WIDTH = params_pkg::REGISTER_WIDTH,
+  parameter int DATA_WIDTH     = params_pkg::DATA_WIDTH
 )(
-  input  logic        clk_i,
-  input  logic        rst_i,
-  input  logic        wr_en_i,
-  input  logic [4:0]  rd_reg_a_i,
-  input  logic [4:0]  rd_reg_b_i,
-  input  logic [4:0]  wr_reg_i,
+  input  logic clk_i,
+  input  logic rst_i,
+  input  logic wr_en_i,
+  input  logic [REGISTER_WIDTH-1:0]  rd_reg_a_i,
+  input  logic [REGISTER_WIDTH-1:0]  rd_reg_b_i,
+  input  logic [REGISTER_WIDTH-1:0]  wr_reg_i,
   input  logic [DATA_WIDTH-1:0] wr_data_i,
   output logic [DATA_WIDTH-1:0] reg_a_data_o,
   output logic [DATA_WIDTH-1:0] reg_b_data_o

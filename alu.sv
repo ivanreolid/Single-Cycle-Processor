@@ -1,8 +1,8 @@
 import params_pkg::*;
 
 module alu #(
-  parameter OPCODE_WIDTH = 4,
-  parameter DATA_WIDTH = 32
+  parameter OPCODE_WIDTH = params_pkg::OPCODE_WIDTH,
+  parameter DATA_WIDTH   = params_pkg::DATA_WIDTH
 )(
   input  logic [OPCODE_WIDTH-1:0] op_i,
   input  logic [DATA_WIDTH-1:0] a_i,

@@ -5,17 +5,10 @@
 
 import params_pkg::*;
 
-module cpu #(
-  parameter MEM_SIZE = 4096
-)(
+module cpu (
   input logic clk_i,
   input logic rst_i
 );
-
-  localparam INSTR_WIDTH = 32;
-  localparam ADDR_WIDTH  = 32;
-  localparam DATA_WIDTH  = 32;
-  localparam OPCODE_WIDTH = 4;
 
   // PC wires
   logic [ADDR_WIDTH-1:0] pc_d, pc_q;
@@ -37,18 +30,9 @@ module cpu #(
   logic [DATA_WIDTH-1:0] data_from_mem;
   logic [DATA_WIDTH-1:0] data_to_reg;
 
-  logic [4:0] reg_a;
+  logic [REGISTER_WIDTH-1:0] reg_a;
   
   logic reg_wr_en;
-
-  imem #(
-    .MEM_SIZE      (MEM_SIZE   ),
-    .ADDR_WIDTH    (ADDR_WIDTH ),
-    .DATA_WIDTH    (INSTR_WIDTH)
-  ) imem (
-    .address_i     (pc_q       ),
-    .instruction_o (instruction)
-  );
 
   assign is_branch = (instruction.opcode == BEQ) | (instruction.opcode == BNE) | (instruction.opcode == BLT) | (instruction.opcode == BGE);
   assign is_jump = instruction.opcode == JMP;
@@ -76,8 +60,18 @@ module cpu #(
   // Only loads write data from memory into the register bank
   assign data_to_reg = is_load ? data_from_mem : result_alu;
 
+  imem #(
+    .MEM_SIZE      (MEM_SIZE   ),
+    .ADDR_WIDTH    (ADDR_WIDTH ),
+    .DATA_WIDTH    (INSTR_WIDTH)
+  ) imem (
+    .address_i     (pc_q       ),
+    .instruction_o (instruction)
+  );
+
   rbank #(
-    .DATA_WIDTH (DATA_WIDTH)
+    .REGISTER_WIDTH (REGISTER_WIDTH),
+    .DATA_WIDTH     (DATA_WIDTH)
    ) rbank (
     .clk_i        (clk_i),
     .rst_i        (rst_i),

@@ -1,5 +1,12 @@
 package params_pkg;
 
+  parameter int OPCODE_WIDTH = 4;
+  parameter int REGISTER_WIDTH = 5;
+  parameter int INSTR_WIDTH = 32;
+  parameter int ADDR_WIDTH  = 32;
+  parameter int DATA_WIDTH  = 32;
+  parameter int MEM_SIZE = 4096;
+
   typedef enum logic[3:0] {
     ADD = 4'b0000,
     LW  = 4'b0001,
@@ -19,10 +26,10 @@ package params_pkg;
 
   typedef struct packed {
     logic [12:0] free;
-    logic [4:0]  ra;
-    logic [4:0]  rb;
-    logic [4:0]  rd;
-    logic [3:0]  opcode;
+    logic [REGISTER_WIDTH-1:0]  ra;
+    logic [REGISTER_WIDTH-1:0]  rb;
+    logic [REGISTER_WIDTH-1:0]  rd;
+    logic [OPCODE_WIDTH-1:0]  opcode;
   } instruction_t;
 
 endpackage

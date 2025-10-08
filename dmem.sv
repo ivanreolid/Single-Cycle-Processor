@@ -1,7 +1,9 @@
+import params_pkg::*;
+
 module dmem #(
-  parameter MEM_SIZE = 4096,
-  parameter ADDR_WIDTH = 32,
-  parameter DATA_WIDTH = 32
+  parameter int MEM_SIZE   = params_pkg::MEM_SIZE,
+  parameter int ADDR_WIDTH = params_pkg::ADDR_WIDTH,
+  parameter int DATA_WIDTH = params_pkg::DATA_WIDTH
 )(
   input  logic clk_i,
   input  logic rst_i,
