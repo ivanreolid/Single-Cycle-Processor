@@ -24,7 +24,7 @@ module cpu #(
   logic branch_taken;
 
   // Instruction wires
-  logic [INSTR_WIDTH-1:0] instruction;
+  instruction_t instruction;
   logic [DATA_WIDTH-1:0] offset_sign_extend;
   logic is_branch, is_jump;
   logic is_load, is_store;
@@ -50,22 +50,21 @@ module cpu #(
     .instruction_o (instruction)
   );
 
-  assign is_branch = (instruction[3:0] == BEQ) | (instruction[3:0] == BNE) | (instruction[3:0] == BLT) |
-                     (instruction[3:0] == BGE);
-  assign is_jump = instruction[3:0] == JMP;
-  assign is_load = instruction[3:0] == LW;
-  assign is_store = instruction[3:0] == SW;
+  assign is_branch = (instruction.opcode == BEQ) | (instruction.opcode == BNE) | (instruction.opcode == BLT) | (instruction.opcode == BGE);
+  assign is_jump = instruction.opcode == JMP;
+  assign is_load = instruction.opcode == LW;
+  assign is_store = instruction.opcode == SW;
 
-  assign branch_taken = ((instruction[3:0] == BEQ) & is_zero) | ((instruction[3:0] == BNE) & ~is_zero) |
-                        ((instruction[3:0] == BLT) & is_less) | ((instruction[3:0] == BGE) & ~is_less);
+  assign branch_taken = ((instruction.opcode == BEQ) & is_zero) | ((instruction.opcode == BNE) & ~is_zero) |
+                        ((instruction.opcode == BLT) & is_less) | ((instruction.opcode == BGE) & ~is_less);
  
   assign pc_plus_one = (pc_q + 1) % MEM_SIZE;
-  assign pc_plus_offset = (pc_q + {instruction[31:19], instruction[8:4]}) % MEM_SIZE;
+  assign pc_plus_offset = (pc_q + {instruction.free, instruction.rd}) % MEM_SIZE;
   assign pc_added = branch_taken ? pc_plus_offset : pc_plus_one;
   assign pc_d = is_jump ? reg_a_data : pc_added;
 
   // Data a from register bank must be rd data for stores
-  assign reg_a = is_store ? instruction[8:4] : instruction[18:14];
+  assign reg_a = is_store ? instruction.rd : instruction.ra;
 
   assign reg_wr_en = ~is_store & ~is_branch & ~is_jump;
 
@@ -84,8 +83,8 @@ module cpu #(
     .rst_i        (rst_i),
     .wr_en_i      (reg_wr_en),
     .rd_reg_a_i   (reg_a),
-    .rd_reg_b_i   (instruction[13:9]),
-    .wr_reg_i     (instruction[8:4]),
+    .rd_reg_b_i   (instruction.rb),
+    .wr_reg_i     (instruction.rd),
     .wr_data_i    (data_to_reg),
     .reg_a_data_o (reg_a_data),
     .reg_b_data_o (reg_b_data)
@@ -108,7 +107,7 @@ module cpu #(
     .OPCODE_WIDTH (OPCODE_WIDTH),
     .DATA_WIDTH   (DATA_WIDTH  )
   ) alu (
-    .op_i      (instruction[3:0]),
+    .op_i      (instruction.opcode),
     .a_i       (data_a_to_alu),
     .b_i       (reg_b_data),
     .is_zero_o (is_zero),

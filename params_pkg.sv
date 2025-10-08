@@ -17,4 +17,12 @@ package params_pkg;
     JMP = 4'b1101
   } opcode;
 
+  typedef struct packed {
+    logic [12:0] free;
+    logic [4:0]  ra;
+    logic [4:0]  rb;
+    logic [4:0]  rd;
+    logic [3:0]  opcode;
+  } instruction_t;
+
 endpackage
