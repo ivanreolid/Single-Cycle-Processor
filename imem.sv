@@ -19,9 +19,9 @@ module imem #(
       mem[i] = i * 100;
     end
     mem[1] = 32'h4470;      // ADD r1, r2 -> r7
-    mem[2] = 32'h40B23;     // SUB r6, r5 -> r18
+    mem[2] = 32'h40B23;     // SUB r16, r5 -> r18
     mem[3] = 32'h446F1;     // LW @17(r3) -> r15
-    mem[4] = 32'hFFFE1981;  // LW @-17(r12) -> r24
+    mem[4] = 32'hFFFE1981;  // LW @-8(r12) -> r24
     mem[5] = 32'h36212;     // SW r1 -> @13(r17)
     mem[6] = 32'hFFFF50E2;  // SW r14 -> @-3(r8)
     mem[7] = 32'hA0DF9;     // BEQ r16, r6, 63
