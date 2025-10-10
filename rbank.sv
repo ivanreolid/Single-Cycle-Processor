@@ -12,7 +12,11 @@ module rbank #(
   input  logic [REGISTER_WIDTH-1:0]  wr_reg_i,
   input  logic [DATA_WIDTH-1:0] wr_data_i,
   output logic [DATA_WIDTH-1:0] reg_a_data_o,
-  output logic [DATA_WIDTH-1:0] reg_b_data_o
+  output logic [DATA_WIDTH-1:0] reg_b_data_o,
+
+`ifndef SYNTHESIS
+  output logic [DATA_WIDTH-1:0] debug_regs_o [0:31]
+`endif
 );
 
   localparam BANK_SIZE = 32;
@@ -31,6 +35,10 @@ module rbank #(
 
   assign reg_a_data_o = regs[rd_reg_a_i];
   assign reg_b_data_o = regs[rd_reg_b_i];
+
+`ifndef SYNTHESIS
+  assign debug_regs_o = regs;
+`endif
 
   initial begin
     $readmemh("init_regs.hex", regs);

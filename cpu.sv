@@ -8,7 +8,13 @@ import params_pkg::*;
 
 module cpu (
   input logic clk_i,
-  input logic rst_i
+  input logic rst_i,
+
+`ifndef SYNTHESIS
+  output logic [DATA_WIDTH-1:0] debug_regs_o [0:31],
+  output logic instruction_t instr_committed,
+  output logic instr_is_committed
+`endif
 );
 
   // PC wires
@@ -84,7 +90,10 @@ module cpu (
     .wr_reg_i     (instruction.rd),
     .wr_data_i    (data_to_reg),
     .reg_a_data_o (reg_a_data),
-    .reg_b_data_o (reg_b_data)
+    .reg_b_data_o (reg_b_data),
+`ifndef SYNTHESIS
+    .debug_regs_o (debug_regs_o)
+`endif
   );
 
   dmem #(
@@ -119,5 +128,14 @@ module cpu (
       pc_q <= pc_d;
     end
   end
+
+`ifndef SYNTHESIS
+  always_comb begin : instr_commit
+    if (rst_i) begin
+      instr_is_committed = 1'b1;
+      instr_committed = instruction;
+    end
+  end 
+`endif
 
 endmodule
