@@ -24,6 +24,8 @@ module test;
 
   logic [ADDR_WIDTH-1:0] pc_plus_offset;
 
+  bit error;
+
   cpu i_cpu (
     .clk_i                      (clk),
     .rst_i                      (rst),
@@ -71,56 +73,74 @@ module test;
 
     for (int i = 0; i < 20; ++i) begin
       #5 clk = 1;
+      error = 1'b0;
       
       if (cpu_instr_is_committed) begin
         model_instr = model_imem[model_pc];
         new_model_pc = (model_pc + 1) % MEM_SIZE;
-        offset_sign_extend = {{(DATA_WIDTH-(INSTR_WIDTH-14)){model_instr[INSTR_WIDTH-1]}}, model_instr[INSTR_WIDTH-1:14]};
-        pc_plus_offset = (model_pc + {model_instr.free, model_instr.rd}) % MEM_SIZE;
-
-        // Check committed instruction
-        if (model_instr != cpu_instr_committed) begin
-          $display("Committed instruction mismatch! Model committed instruction=0x%0h, CPU committed instruction=0x%0h", model_instr, cpu_instr_committed);
-        end
-
-        // Execute the commit instruction in the model
-        case (model_instr.opcode)
-          ADD: model_regs[model_instr.rd] = model_regs[model_instr.ra] + model_regs[model_instr.rb]; 
-          LW:  model_regs[model_instr.rd] = model_dmem[offset_sign_extend + model_instr.rb];
-          SW:  model_dmem[offset_sign_extend + model_instr.rb] = model_instr.rd;
-          SUB: model_regs[model_instr.rd] = model_regs[model_instr.ra] - model_regs[model_instr.rb];
-          AND: model_regs[model_instr.rd] = model_regs[model_instr.ra] & model_regs[model_instr.rb];
-          MUL: model_regs[model_instr.rd] = model_regs[model_instr.ra] * model_regs[model_instr.rb];
-          DIV: model_regs[model_instr.rd] = model_regs[model_instr.ra] / model_regs[model_instr.rb];
-          OR:  model_regs[model_instr.rd] = model_regs[model_instr.ra] | model_regs[model_instr.rb];
-          XOR: model_regs[model_instr.rd] = model_regs[model_instr.ra] ^ model_regs[model_instr.rb];
-          BEQ: new_model_pc = model_regs[model_instr.ra] == model_regs[model_instr.rb] ? pc_plus_offset : new_model_pc;
-          BNE: new_model_pc = model_regs[model_instr.ra] != model_regs[model_instr.rb] ? pc_plus_offset : new_model_pc;
-          BLT: new_model_pc = model_regs[model_instr.ra] < model_regs[model_instr.rb]  ? pc_plus_offset : new_model_pc;
-          BGE: new_model_pc = model_regs[model_instr.ra] >= model_regs[model_instr.rb] ? pc_plus_offset : new_model_pc;
-          JMP: new_model_pc = model_regs[model_instr.ra];
-          //default:
-        endcase
-
-      end
-
-      // Check registers
-      for (int i = 0; i < 32; ++i) begin
-        if (model_regs[i] != cpu_regs[i]) begin
-          $display("Register mismatch! Model register %0d=%0d, CPU register %0d=%0d", i, model_regs[i], i, cpu_regs[i]);
-        end
-      end
-
-      // Check data memory
-      for (int i = 0; i < MEM_SIZE; ++i) begin
-        if (model_dmem[i] != cpu_dmem[i]) begin
-          $display("Data memory mismatch! Model dmem @0x%0h=0x%0h, CPU dmem @0x%0h=0x%0h", i, model_dmem[i], i, cpu_dmem[i]);
-        end
+        execute_model_instr();
+        check_committed_instr();
+        check_registers();
+        check_data_memory();
+        print_committed_instr();
       end
 
       #5 clk = 0;
       model_pc = new_model_pc;
     end
   end
-  
+
+  function void check_committed_instr();
+    if (model_instr != cpu_instr_committed) begin
+      $display("Committed instruction mismatch! Model committed instruction=0x%0h, CPU committed instruction=0x%0h", model_instr, cpu_instr_committed);
+      error = 1'b1;
+    end
+  endfunction
+
+  function void check_registers();
+    for (int i = 0; i < 32; ++i) begin
+      if (model_regs[i] != cpu_regs[i]) begin
+        $display("Register mismatch! Model register %0d=%0d, CPU register %0d=%0d", i, model_regs[i], i, cpu_regs[i]);
+        error = 1'b1;
+      end
+    end
+  endfunction
+
+  function void check_data_memory();
+    for (int i = 0; i < MEM_SIZE; ++i) begin
+      if (model_dmem[i] != cpu_dmem[i]) begin
+        $display("Data memory mismatch! Model dmem @0x%0h=0x%0h, CPU dmem @0x%0h=0x%0h", i, model_dmem[i], i, cpu_dmem[i]);
+        error = 1'b1;
+      end
+    end
+  endfunction
+
+  function void print_committed_instr();
+    if (!error) begin
+      $display("Instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
+    end
+  endfunction
+
+  function void execute_model_instr();
+    offset_sign_extend = {{(DATA_WIDTH-(INSTR_WIDTH-14)){model_instr[INSTR_WIDTH-1]}}, model_instr[INSTR_WIDTH-1:14]};
+    pc_plus_offset = (model_pc + {model_instr.free, model_instr.rd}) % MEM_SIZE;
+    case (model_instr.opcode)
+      ADD: model_regs[model_instr.rd] = model_regs[model_instr.ra] + model_regs[model_instr.rb]; 
+      LW:  model_regs[model_instr.rd] = model_dmem[offset_sign_extend + model_instr.rb];
+      SW:  model_dmem[offset_sign_extend + model_instr.rb] = model_instr.rd;
+      SUB: model_regs[model_instr.rd] = model_regs[model_instr.ra] - model_regs[model_instr.rb];
+      AND: model_regs[model_instr.rd] = model_regs[model_instr.ra] & model_regs[model_instr.rb];
+      MUL: model_regs[model_instr.rd] = model_regs[model_instr.ra] * model_regs[model_instr.rb];
+      DIV: model_regs[model_instr.rd] = model_regs[model_instr.ra] / model_regs[model_instr.rb];
+      OR:  model_regs[model_instr.rd] = model_regs[model_instr.ra] | model_regs[model_instr.rb];
+      XOR: model_regs[model_instr.rd] = model_regs[model_instr.ra] ^ model_regs[model_instr.rb];
+      BEQ: new_model_pc = model_regs[model_instr.ra] == model_regs[model_instr.rb] ? pc_plus_offset : new_model_pc;
+      BNE: new_model_pc = model_regs[model_instr.ra] != model_regs[model_instr.rb] ? pc_plus_offset : new_model_pc;
+      BLT: new_model_pc = model_regs[model_instr.ra] <  model_regs[model_instr.rb] ? pc_plus_offset : new_model_pc;
+      BGE: new_model_pc = model_regs[model_instr.ra] >= model_regs[model_instr.rb] ? pc_plus_offset : new_model_pc;
+      JMP: new_model_pc = model_regs[model_instr.ra];
+      //default:
+    endcase
+  endfunction
+
 endmodule
