@@ -9,11 +9,11 @@ import params_pkg::*;
 module cpu (
   input logic clk_i,
   input logic rst_i,
-
 `ifndef SYNTHESIS
+  output logic [DATA_WIDTH-1:0] dut_dmem_o [0:MEM_SIZE-1],
   output logic [DATA_WIDTH-1:0] debug_regs_o [0:31],
-  output logic instruction_t instr_committed,
-  output logic instr_is_committed
+  output instruction_t instr_committed_o,
+  output logic instr_is_committed_o
 `endif
 );
 
@@ -48,7 +48,7 @@ module cpu (
   // Data a from register bank must be rd data for stores
   assign reg_a = is_store ? instruction.rd : instruction.ra;
 
-  assign offset_sign_extend = {{DATA_WIDTH-(INSTR_WIDTH-14){instruction[INSTR_WIDTH-1]}}, instruction[INSTR_WIDTH-1:14]}; 
+  assign offset_sign_extend = {{(DATA_WIDTH-(INSTR_WIDTH-14)){instruction[INSTR_WIDTH-1]}}, instruction[INSTR_WIDTH-1:14]};
  
   // Data a for the ALU is the offset sign extended for both load and store instructions
   assign data_a_to_alu = (is_load | is_store) ? offset_sign_extend : reg_a_data;
@@ -106,7 +106,10 @@ module cpu (
     .wr_en_i   (is_store),
     .addr_i    (result_alu),
     .wr_data_i (reg_a_data),
-    .rd_data_o (data_from_mem)
+    .rd_data_o (data_from_mem),
+`ifndef SYNTHESIS
+    .debug_dmem_o (dut_dmem_o)
+`endif
   );
 
   alu #(
@@ -126,16 +129,11 @@ module cpu (
       pc_q <= 0;
     end else begin
       pc_q <= pc_d;
+`ifndef SYNTHESIS
+      instr_is_committed_o <= 1'b1;
+      instr_committed_o <= instruction;
+`endif
     end
   end
-
-`ifndef SYNTHESIS
-  always_comb begin : instr_commit
-    if (rst_i) begin
-      instr_is_committed = 1'b1;
-      instr_committed = instruction;
-    end
-  end 
-`endif
 
 endmodule
