@@ -10,10 +10,10 @@ module cpu (
   input logic clk_i,
   input logic rst_i,
 `ifndef SYNTHESIS
-  output logic [DATA_WIDTH-1:0] dut_dmem_o [0:MEM_SIZE-1],
+  output logic [DATA_WIDTH-1:0] debug_dmem_o [0:MEM_SIZE-1],
   output logic [DATA_WIDTH-1:0] debug_regs_o [0:31],
-  output instruction_t instr_committed_o,
-  output logic instr_is_committed_o
+  output instruction_t debug_instr_committed_o,
+  output logic debug_instr_is_committed_o
 `endif
 );
 
@@ -108,7 +108,7 @@ module cpu (
     .wr_data_i (reg_a_data),
     .rd_data_o (data_from_mem),
 `ifndef SYNTHESIS
-    .debug_dmem_o (dut_dmem_o)
+    .debug_dmem_o (debug_dmem_o)
 `endif
   );
 
@@ -130,8 +130,8 @@ module cpu (
     end else begin
       pc_q <= pc_d;
 `ifndef SYNTHESIS
-      instr_is_committed_o <= 1'b1;
-      instr_committed_o <= instruction;
+      debug_instr_is_committed_o <= 1'b1;
+      debug_instr_committed_o    <= instruction;
 `endif
     end
   end

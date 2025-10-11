@@ -10,27 +10,27 @@ module test;
 
   logic [ADDR_WIDTH-1:0] model_pc, new_model_pc;
 
-  logic [DATA_WIDTH-1:0] dut_dmem [0:MEM_SIZE-1];
-  logic [DATA_WIDTH-1:0] debug_regs [0:31];
+  logic [DATA_WIDTH-1:0] cpu_dmem [0:MEM_SIZE-1];
+  logic [DATA_WIDTH-1:0] cpu_regs [0:31];
   
   logic [DATA_WIDTH-1:0] model_regs [0:31];
   logic [DATA_WIDTH-1:0] model_imem [0:MEM_SIZE-1];
   logic [DATA_WIDTH-1:0] model_dmem [0:MEM_SIZE-1];
 
-  logic dut_instr_is_committed;
-  instruction_t model_instr, dut_instr_committed;
+  logic cpu_instr_is_committed;
+  instruction_t model_instr, cpu_instr_committed;
 
   logic [DATA_WIDTH-1:0] offset_sign_extend;
 
   logic [ADDR_WIDTH-1:0] pc_plus_offset;
 
   cpu i_cpu (
-    .clk_i (clk),
-    .rst_i (rst),
-    .dut_dmem_o (dut_dmem),
-    .debug_regs_o (debug_regs),
-    .instr_committed_o (dut_instr_committed),
-    .instr_is_committed_o (dut_instr_is_committed)
+    .clk_i                      (clk),
+    .rst_i                      (rst),
+    .debug_dmem_o               (cpu_dmem),
+    .debug_regs_o               (cpu_regs),
+    .debug_instr_committed_o    (cpu_instr_committed),
+    .debug_instr_is_committed_o (cpu_instr_is_committed)
   );
 
   initial begin
@@ -72,15 +72,15 @@ module test;
     for (int i = 0; i < 20; ++i) begin
       #5 clk = 1;
       
-      if (dut_instr_is_committed) begin
+      if (cpu_instr_is_committed) begin
         model_instr = model_imem[model_pc];
         new_model_pc = (model_pc + 1) % MEM_SIZE;
         offset_sign_extend = {{(DATA_WIDTH-(INSTR_WIDTH-14)){model_instr[INSTR_WIDTH-1]}}, model_instr[INSTR_WIDTH-1:14]};
         pc_plus_offset = (model_pc + {model_instr.free, model_instr.rd}) % MEM_SIZE;
 
         // Check committed instruction
-        if (model_instr != dut_instr_committed) begin
-          $display("Committed instruction mismatch! Model committed instruction=0x%0h, DUT committed instruction=0x%0h", model_instr, dut_instr_committed);
+        if (model_instr != cpu_instr_committed) begin
+          $display("Committed instruction mismatch! Model committed instruction=0x%0h, CPU committed instruction=0x%0h", model_instr, cpu_instr_committed);
         end
 
         // Execute the commit instruction in the model
@@ -106,15 +106,15 @@ module test;
 
       // Check registers
       for (int i = 0; i < 32; ++i) begin
-        if (model_regs[i] != debug_regs[i]) begin
-          $display("Register mismatch! Model register %0d=%0d, CPU register %0d=%0d", i, model_regs[i], i, debug_regs[i]);
+        if (model_regs[i] != cpu_regs[i]) begin
+          $display("Register mismatch! Model register %0d=%0d, CPU register %0d=%0d", i, model_regs[i], i, cpu_regs[i]);
         end
       end
 
       // Check data memory
       for (int i = 0; i < MEM_SIZE; ++i) begin
-        if (model_dmem[i] != dut_dmem[i]) begin
-          $display("Data memory mismatch! Model dmem @0x%0h=0x%0h, DUT dmem @0x%0h=0x%0h", i, model_dmem[i], i, dut_dmem[i]); 
+        if (model_dmem[i] != cpu_dmem[i]) begin
+          $display("Data memory mismatch! Model dmem @0x%0h=0x%0h, CPU dmem @0x%0h=0x%0h", i, model_dmem[i], i, cpu_dmem[i]);
         end
       end
 

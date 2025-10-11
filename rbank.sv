@@ -13,7 +13,6 @@ module rbank #(
   input  logic [DATA_WIDTH-1:0] wr_data_i,
   output logic [DATA_WIDTH-1:0] reg_a_data_o,
   output logic [DATA_WIDTH-1:0] reg_b_data_o,
-
 `ifndef SYNTHESIS
   output logic [DATA_WIDTH-1:0] debug_regs_o [0:31]
 `endif
