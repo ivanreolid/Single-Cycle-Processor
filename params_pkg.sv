@@ -24,12 +24,32 @@ package params_pkg;
     JMP = 4'b1101
   } opcode;
 
+  function string opcode_to_string(opcode op);
+    case (op)
+      ADD: opcode_to_string = "ADD";
+      LW : opcode_to_string = "LW";
+      SW : opcode_to_string = "SW";
+      SUB: opcode_to_string = "SUB";
+      MUL: opcode_to_string = "MUL";
+      DIV: opcode_to_string = "DIV";
+      AND: opcode_to_string = "AND";
+      OR : opcode_to_string = "OR";
+      XOR: opcode_to_string = "XOR";
+      BEQ: opcode_to_string = "BEQ";
+      BNE: opcode_to_string = "BNE";
+      BLT: opcode_to_string = "BLT";
+      BGE: opcode_to_string = "BGE";
+      JMP: opcode_to_string = "JMP";
+      default: opcode_to_string = "???";
+    endcase
+  endfunction
+
   typedef struct packed {
     logic [12:0] free;
     logic [REGISTER_WIDTH-1:0]  ra;
     logic [REGISTER_WIDTH-1:0]  rb;
     logic [REGISTER_WIDTH-1:0]  rd;
-    logic [OPCODE_WIDTH-1:0]  opcode;
+    opcode opcode;
   } instruction_t;
 
 endpackage
