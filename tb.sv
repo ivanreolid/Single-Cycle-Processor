@@ -2,7 +2,7 @@
 
 import params_pkg::*;
 
-module test;
+module tb;
   localparam MEM_SIZE = 4096;
 
   logic clk;
@@ -92,7 +92,8 @@ module test;
 
   function void check_committed_instr();
     if (model_instr != cpu_instr_committed) begin
-      $display("Committed instruction mismatch! Model committed instruction=0x%0h, CPU committed instruction=0x%0h", model_instr, cpu_instr_committed);
+      $display("Committed instruction mismatch! Model committed instruction=0x%0h, CPU committed instruction=0x%0h", model_instr,
+        cpu_instr_committed);
       error = 1'b1;
     end
   endfunction
@@ -117,7 +118,8 @@ module test;
 
   function void print_committed_instr();
     if (!error) begin
-      $display("Instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
+      $display("PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_pc,
+        model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
     end
   endfunction
 
