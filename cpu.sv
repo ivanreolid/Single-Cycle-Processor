@@ -19,7 +19,7 @@ module cpu (
 
   // PC wires
   logic [ADDR_WIDTH-1:0] pc_d, pc_q;
-  logic [ADDR_WIDTH-1:0] pc_plus_one, pc_plus_offset, pc_added;
+  logic [ADDR_WIDTH-1:0] pc_offset, pc_added;
   logic is_zero, is_less;
   logic branch_taken;
 
@@ -40,9 +40,8 @@ module cpu (
   
   logic reg_wr_en;
 
-  assign pc_plus_one = (pc_q + 1) % MEM_SIZE;
-  assign pc_plus_offset = (pc_q + {instruction.free, instruction.rd}) % MEM_SIZE;
-  assign pc_added = branch_taken ? pc_plus_offset : pc_plus_one;
+  assign pc_offset = branch_taken ? {instruction.free, instruction.rd} : {{ADDR_WIDTH-1{1'b0}}, 1'b1};
+  assign pc_added = (pc_q + pc_offset) % MEM_SIZE;
   assign pc_d = is_jump ? reg_a_data : pc_added;
 
   // Data a from register bank must be rd data for stores
