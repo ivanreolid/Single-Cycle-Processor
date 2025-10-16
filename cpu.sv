@@ -12,6 +12,7 @@ module cpu (
 `ifndef SYNTHESIS
   output logic [DATA_WIDTH-1:0] debug_dmem_o [0:MEM_SIZE-1],
   output logic [DATA_WIDTH-1:0] debug_regs_o [0:31],
+  output logic [ADDR_WIDTH-1:0] debug_pc_committed_o,
   output instruction_t debug_instr_committed_o,
   output logic debug_instr_is_committed_o
 `endif
@@ -129,6 +130,7 @@ module cpu (
     end else begin
       pc_q <= pc_d;
 `ifndef SYNTHESIS
+      debug_pc_committed_o       <= pc_q;
       debug_instr_is_committed_o <= 1'b1;
       debug_instr_committed_o    <= instruction;
 `endif
