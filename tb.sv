@@ -19,18 +19,21 @@ module tb;
 
   logic cpu_instr_is_committed;
   instruction_t model_instr, cpu_instr_committed;
+  logic [ADDR_WIDTH-1:0] cpu_pc_committed;
 
   logic [DATA_WIDTH-1:0] offset_sign_extend;
 
   logic [ADDR_WIDTH-1:0] pc_plus_offset;
 
   bit error;
+  string error_msg;
 
   cpu i_cpu (
     .clk_i                      (clk),
     .rst_i                      (rst),
     .debug_dmem_o               (cpu_dmem),
     .debug_regs_o               (cpu_regs),
+    .debug_pc_committed_o       (cpu_pc_committed),
     .debug_instr_committed_o    (cpu_instr_committed),
     .debug_instr_is_committed_o (cpu_instr_is_committed)
   );
@@ -78,11 +81,20 @@ module tb;
       if (cpu_instr_is_committed) begin
         model_instr = model_imem[model_pc];
         new_model_pc = (model_pc + 1) % MEM_SIZE;
+        error_msg = "";
+
         execute_model_instr();
         check_committed_instr();
         check_registers();
         check_data_memory();
-        print_committed_instr();
+
+        if (error) begin
+          $display("Something went wrong with PC=0x%0h and instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s):\n%s",
+                   model_pc, model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode),
+                   error_msg);
+        end else begin
+          print_committed_instr();
+        end
       end
 
       #5 clk = 0;
@@ -92,8 +104,9 @@ module tb;
 
   function void check_committed_instr();
     if (model_instr != cpu_instr_committed) begin
-      $display("Committed instruction mismatch! Model committed instruction=0x%0h, CPU committed instruction=0x%0h", model_instr,
-        cpu_instr_committed);
+      error_msg = {error_msg, $sformatf(" CPU committed PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s)\n",
+                  cpu_pc_committed, cpu_instr_committed, cpu_instr_committed.free, cpu_instr_committed.ra, cpu_instr_committed.rb,
+                  cpu_instr_committed.rd, opcode_to_string(cpu_instr_committed.opcode))};
       error = 1'b1;
     end
   endfunction
@@ -101,7 +114,7 @@ module tb;
   function void check_registers();
     for (int i = 0; i < 32; ++i) begin
       if (model_regs[i] != cpu_regs[i]) begin
-        $display("Register mismatch! Model register %0d=%0d, CPU register %0d=%0d", i, model_regs[i], i, cpu_regs[i]);
+        error_msg = {error_msg, $sformatf(" Register %0d: model=0x%0h, CPU=0x%0h\n", i, model_regs[i], cpu_regs[i])};
         error = 1'b1;
       end
     end
@@ -110,17 +123,15 @@ module tb;
   function void check_data_memory();
     for (int i = 0; i < MEM_SIZE; ++i) begin
       if (model_dmem[i] != cpu_dmem[i]) begin
-        $display("Data memory mismatch! Model dmem @0x%0h=0x%0h, CPU dmem @0x%0h=0x%0h", i, model_dmem[i], i, cpu_dmem[i]);
+        error_msg = {error_msg, $sformatf(" Data memory address 0x%0h: model=0x%0h, CPU=0x%0h\n", i, model_dmem[i], cpu_dmem[i])};
         error = 1'b1;
       end
     end
   endfunction
 
   function void print_committed_instr();
-    if (!error) begin
-      $display("PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_pc,
-        model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
-    end
+    $display("PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_pc,
+      model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
   endfunction
 
   function void execute_model_instr();
