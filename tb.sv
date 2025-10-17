@@ -89,9 +89,7 @@ module tb;
         check_data_memory();
 
         if (error) begin
-          $display("Something went wrong with PC=0x%0h and instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s):\n%s",
-                   model_pc, model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode),
-                   error_msg);
+          print_faulty_instr();
         end else begin
           print_committed_instr();
         end
@@ -129,11 +127,6 @@ module tb;
     end
   endfunction
 
-  function void print_committed_instr();
-    $display("PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_pc,
-      model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
-  endfunction
-
   function void execute_model_instr();
     offset_sign_extend = {{(DATA_WIDTH-(INSTR_WIDTH-14)){model_instr[INSTR_WIDTH-1]}}, model_instr[INSTR_WIDTH-1:14]};
     pc_plus_offset = (model_pc + {model_instr.free, model_instr.rd}) % MEM_SIZE;
@@ -154,6 +147,17 @@ module tb;
       JMP: new_model_pc = model_regs[model_instr.ra];
       //default:
     endcase
+  endfunction
+
+  function void print_faulty_instr();
+      $display("Something went wrong with PC=0x%0h and instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s):\n%s",
+             model_pc, model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode),
+             error_msg);
+  endfunction
+
+  function void print_committed_instr();
+    $display("PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_pc,
+             model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
   endfunction
 
 endmodule
