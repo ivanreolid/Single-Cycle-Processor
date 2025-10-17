@@ -39,17 +39,48 @@ module tb;
   );
 
   initial begin
+    clk = 1;
+    rst = 0;
     model_pc = 0;
 
+    initialize_registers();
+    initialize_memories();
+
+    #5 clk = 0;
+    #5 clk = 1; rst = 1;
+    #5 clk = 0;
+
+    for (int i = 0; i < 20; ++i) begin
+      #5 clk = 1;
+
+      if (cpu_instr_is_committed) begin
+        model_instr = model_imem[model_pc];
+        new_model_pc = (model_pc + 1) % MEM_SIZE;
+        error_msg = "";
+        error = 1'b0;
+        execute_model_instr();
+        check_committed_instr();
+        check_registers();
+        check_data_memory();
+        print_check_result();
+      end
+
+      #5 clk = 0;
+      model_pc = new_model_pc;
+    end
+  end
+
+  function void initialize_registers();
     for (int i = 0; i < 32; ++i) begin
       model_regs[i] = i;
     end
-    
+  endfunction
+
+  function void initialize_memories();
     for (int i = 0; i < MEM_SIZE; ++i) begin
       model_imem[i] = i * 100;
       model_dmem[i] = i;
     end
-    
     model_imem[1] = 32'h4470;      // ADD r1, r2 -> r7
     model_imem[2] = 32'h40B23;     // SUB r6, r5 -> r18
     model_imem[3] = 32'h446F1;     // LW @17(r3) -> r15
@@ -66,41 +97,7 @@ module tb;
     model_imem[83] = 32'h6BEAC;    // BGE r26, r31, 10
     model_imem[84] = 32'h7F4AC;    // BGE r31, r26, 10
     model_imem[94] = 32'h7800D;    // JMP r30
-
-    clk = 1;
-    rst = 0;
-
-    #5 clk = 0;
-    #5 clk = 1; rst = 1;
-    #5 clk = 0;
-
-    for (int i = 0; i < 20; ++i) begin
-      #5 clk = 1;
-      error = 1'b0;
-      
-      if (cpu_instr_is_committed) begin
-        model_instr = model_imem[model_pc];
-        new_model_pc = (model_pc + 1) % MEM_SIZE;
-        error_msg = "";
-
-        execute_model_instr();
-        check_committed_instr();
-        check_registers();
-        check_data_memory();
-
-        if (error) begin
-          $display("Something went wrong with PC=0x%0h and instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s):\n%s",
-                   model_pc, model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode),
-                   error_msg);
-        end else begin
-          print_committed_instr();
-        end
-      end
-
-      #5 clk = 0;
-      model_pc = new_model_pc;
-    end
-  end
+  endfunction
 
   function void check_committed_instr();
     if (model_instr != cpu_instr_committed) begin
@@ -129,11 +126,6 @@ module tb;
     end
   endfunction
 
-  function void print_committed_instr();
-    $display("PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_pc,
-      model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
-  endfunction
-
   function void execute_model_instr();
     offset_sign_extend = {{(DATA_WIDTH-(INSTR_WIDTH-14)){model_instr[INSTR_WIDTH-1]}}, model_instr[INSTR_WIDTH-1:14]};
     pc_plus_offset = (model_pc + {model_instr.free, model_instr.rd}) % MEM_SIZE;
@@ -154,6 +146,17 @@ module tb;
       JMP: new_model_pc = model_regs[model_instr.ra];
       //default:
     endcase
+  endfunction
+
+  function void print_check_result();
+    if (error) begin
+      $display("Something went wrong with PC=0x%0h and instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s):\n%s",
+               model_pc, model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode),
+               error_msg);
+    end else begin
+      $display("PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_pc,
+               model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
+    end
   endfunction
 
 endmodule
