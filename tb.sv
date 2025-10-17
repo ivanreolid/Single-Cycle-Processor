@@ -58,17 +58,11 @@ module tb;
         new_model_pc = (model_pc + 1) % MEM_SIZE;
         error_msg = "";
         error = 1'b0;
-
         execute_model_instr();
         check_committed_instr();
         check_registers();
         check_data_memory();
-
-        if (error) begin
-          print_faulty_instr();
-        end else begin
-          print_committed_instr();
-        end
+        print_check_result();
       end
 
       #5 clk = 0;
@@ -154,15 +148,15 @@ module tb;
     endcase
   endfunction
 
-  function void print_faulty_instr();
+  function void print_check_result();
+    if (error) begin
       $display("Something went wrong with PC=0x%0h and instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s):\n%s",
-             model_pc, model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode),
-             error_msg);
-  endfunction
-
-  function void print_committed_instr();
-    $display("PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_pc,
-             model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
+               model_pc, model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode),
+               error_msg);
+    end else begin
+      $display("PC=0x%0h with instruction 0x%0h (free=0x%0h ra=0x%0h rb=0x%0h rd=0x%0h opcode=%s) executed correctly", model_pc,
+               model_instr, model_instr.free, model_instr.ra, model_instr.rb, model_instr.rd, opcode_to_string(model_instr.opcode));
+    end
   endfunction
 
 endmodule
