@@ -39,36 +39,12 @@ module tb;
   );
 
   initial begin
-    model_pc = 0;
-
-    for (int i = 0; i < 32; ++i) begin
-      model_regs[i] = i;
-    end
-    
-    for (int i = 0; i < MEM_SIZE; ++i) begin
-      model_imem[i] = i * 100;
-      model_dmem[i] = i;
-    end
-    
-    model_imem[1] = 32'h4470;      // ADD r1, r2 -> r7
-    model_imem[2] = 32'h40B23;     // SUB r6, r5 -> r18
-    model_imem[3] = 32'h446F1;     // LW @17(r3) -> r15
-    model_imem[4] = 32'hFFFE1981;  // LW @-17(r12) -> r24
-    model_imem[5] = 32'h36212;     // SW r1 -> @13(r17)
-    model_imem[6] = 32'hFFFF50E2;  // SW r14 -> @-3(r8)
-    model_imem[7] = 32'hA0DF9;     // BEQ r16, r6, 63
-    model_imem[8] = 32'h98DF9;     // BEQ r6, r6, 63
-    model_imem[61] = 32'h427A;     // BNE r1, r1, 3
-    model_imem[62] = 32'h4CAA;     // BNE r1, r6, 10
-    model_imem[71] = 32'hFFF98D69; // BEQ r6, r6, -10
-    model_imem[72] = 32'h390AB;    // BLT r14, r8, 10
-    model_imem[73] = 32'h21CAB;    // BLT r8, r14, 10
-    model_imem[83] = 32'h6BEAC;    // BGE r26, r31, 10
-    model_imem[84] = 32'h7F4AC;    // BGE r31, r26, 10
-    model_imem[94] = 32'h7800D;    // JMP r30
-
     clk = 1;
     rst = 0;
+    model_pc = 0;
+
+    initialize_registers();
+    initialize_memories();
 
     #5 clk = 0;
     #5 clk = 1; rst = 1;
@@ -76,12 +52,12 @@ module tb;
 
     for (int i = 0; i < 20; ++i) begin
       #5 clk = 1;
-      error = 1'b0;
-      
+
       if (cpu_instr_is_committed) begin
         model_instr = model_imem[model_pc];
         new_model_pc = (model_pc + 1) % MEM_SIZE;
         error_msg = "";
+        error = 1'b0;
 
         execute_model_instr();
         check_committed_instr();
@@ -99,6 +75,35 @@ module tb;
       model_pc = new_model_pc;
     end
   end
+
+  function void initialize_registers();
+    for (int i = 0; i < 32; ++i) begin
+      model_regs[i] = i;
+    end
+  endfunction
+
+  function void initialize_memories();
+    for (int i = 0; i < MEM_SIZE; ++i) begin
+      model_imem[i] = i * 100;
+      model_dmem[i] = i;
+    end
+    model_imem[1] = 32'h4470;      // ADD r1, r2 -> r7
+    model_imem[2] = 32'h40B23;     // SUB r6, r5 -> r18
+    model_imem[3] = 32'h446F1;     // LW @17(r3) -> r15
+    model_imem[4] = 32'hFFFE1981;  // LW @-17(r12) -> r24
+    model_imem[5] = 32'h36212;     // SW r1 -> @13(r17)
+    model_imem[6] = 32'hFFFF50E2;  // SW r14 -> @-3(r8)
+    model_imem[7] = 32'hA0DF9;     // BEQ r16, r6, 63
+    model_imem[8] = 32'h98DF9;     // BEQ r6, r6, 63
+    model_imem[61] = 32'h427A;     // BNE r1, r1, 3
+    model_imem[62] = 32'h4CAA;     // BNE r1, r6, 10
+    model_imem[71] = 32'hFFF98D69; // BEQ r6, r6, -10
+    model_imem[72] = 32'h390AB;    // BLT r14, r8, 10
+    model_imem[73] = 32'h21CAB;    // BLT r8, r14, 10
+    model_imem[83] = 32'h6BEAC;    // BGE r26, r31, 10
+    model_imem[84] = 32'h7F4AC;    // BGE r31, r26, 10
+    model_imem[94] = 32'h7800D;    // JMP r30
+  endfunction
 
   function void check_committed_instr();
     if (model_instr != cpu_instr_committed) begin
